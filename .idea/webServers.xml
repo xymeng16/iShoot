@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="41bb5da8-fa23-45f5-bc28-cce906dce420" name="GPU Server" url="http://211.81.55.131">
+        <fileTransfer host="211.81.55.131" port="22" rootFolder="/home/xymeng" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

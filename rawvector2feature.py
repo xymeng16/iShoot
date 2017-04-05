@@ -1,7 +1,10 @@
 import numpy as np
 import matplotlib.pylab as plt
 from scipy.interpolate import interp1d
-from scipy.spatial.distance import mahalanobis
+from scipy.spatial.distance import euclidean
+from sklearn.decomposition import PCA
+from scipy.spatial import ConvexHull
+from sklearn.ensemble import RandomForestClassifier
 import os.path
 
 
@@ -43,7 +46,7 @@ if not os.path.isfile('interped_raw_mxy.npy'):
     for ds in data_xr:
         if len(ds) > maxCount:
             maxCount = len(ds)
-    print maxCount
+    # print maxCount
     feature_vectors = {'mxy': [], 'xr': [], 'cxt': []}
 
     for idx in range(0, len(data_mxy)):
@@ -75,8 +78,8 @@ if not os.path.isfile('interped_raw_mxy.npy'):
             y = d[:, i]
             x = np.arange(0, len(y), 1)
             if len(y) == 1:
-                print 'Find a 1-entry-y at #%d iteration!' % idx
-                print y
+                print('Find a 1-entry-y at #%d iteration!' % idx)
+                print(y)
                 findOne = True
                 break
             xNew = np.linspace(0, len(x), maxCount)
@@ -120,9 +123,9 @@ if not os.path.isfile('interped_raw_mxy.npy'):
         feature_vectors['xr'].append(newV)
     feature_vectors['xr'] = np.array(feature_vectors['xr'])
 
-    print len(feature_vectors['mxy'])
-    print len(feature_vectors['xr'])
-    print len(feature_vectors['cxt'])
+    print(len(feature_vectors['mxy']))
+    print(len(feature_vectors['xr']))
+    print(len(feature_vectors['cxt']))
 
     np.save('interped_raw_mxy', feature_vectors['mxy'])
     np.save('interped_raw_xr', feature_vectors['xr'])
@@ -132,32 +135,72 @@ if not os.path.isfile('interped_raw_mxy.npy'):
 mxy = np.load('interped_raw_mxy.npy')
 cxt = np.load('interped_raw_cxt.npy')
 xr = np.load('interped_raw_xr.npy')
+if not os.path.isfile('feas.npy'):
+    mxy_avg = []
+    cxt_avg = []
+    xr_avg = []
 
-mxy_avg = []
-cxt_avg = []
-xr_avg = []
+    for d in mxy:
+        sum = np.zeros((1, 6))
+        for dd in d:
+            sum += dd
+        sum /= len(d)
+        mxy_avg.append(sum)
 
-for d in mxy:
-    sum = np.zeros((1,6))
-    for dd in d:
-        sum += dd
-    sum /= len(d)
-    mxy_avg.append(sum)
+    for d in cxt:
+        sum = np.zeros((1, 6))
+        for dd in d:
+            sum += dd
+        sum /= len(d)
+        cxt_avg.append(sum)
 
-for d in cxt:
-    sum = np.zeros((1,6))
-    for dd in d:
-        sum += dd
-    sum /= len(d)
-    cxt_avg.append(sum)
+    for d in xr:
+        sum = np.zeros((1, 6))
+        for dd in d:
+            sum += dd
+        sum /= len(d)
+        xr_avg.append(sum)
 
-for d in xr:
-    sum = np.zeros((1,6))
-    for dd in d:
-        sum += dd
-    sum /= len(d)
-    xr_avg.append(sum)
+    # print len(mxy_avg), len(xr_avg), len(cxt_avg)
+    mxy_fea = []
+    cxt_fea = []
+    xr_fea = []
+    fea = []
+    for i in range(0, len(mxy)):
+        mxy_fea.append([euclidean(x, avg) for avg in mxy_avg[i] for x in mxy[i]])
 
-# print len(mxy_avg), len(xr_avg), len(cxt_avg)
+    for i in range(0, len(mxy)):
+        mxy_fea.append([euclidean(x, avg) for avg in mxy_avg[i] for x in mxy[i]])
 
-mahalanobis()
+    for i in range(0, len(mxy)):
+        mxy_fea.append([euclidean(x, avg) for avg in mxy_avg[i] for x in mxy[i]])
+
+    for d in mxy_fea:
+        fea.append(d)
+    for d in cxt_fea:
+        fea.append(d)
+    for d in xr_fea:
+        fea.append(d)
+
+    print(len(fea))
+
+    fea = np.array(fea)
+    np.save('feas', fea)
+fea = np.load('feas.npy')
+# print(fea)
+
+pca = PCA(n_components=10)
+
+feas = pca.fit_transform(fea)
+
+# print(fea)
+feas = np.array(feas)
+print(feas)
+hull = ConvexHull(feas, qhull_options="Qx, E0.03")
+
+print(len(fea[0]))
+
+rf = RandomForestClassifier()
+rf.fit(fea[0:50], [1 for i in range(0, 50)])
+t = rf.predict(fea[51:117])
+print(t)
